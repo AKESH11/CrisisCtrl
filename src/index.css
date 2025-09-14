@@ -1,0 +1,458 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Override Leaflet's default styles to work with Tailwind */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* Custom modal styles - Enhanced for browser compatibility */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  overflow: hidden;
+}
+
+.modal-content {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 28rem;
+  width: 100%;
+  margin: 1rem;
+  padding: 1.5rem;
+  position: relative;
+  z-index: 1000000;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+  overflow: hidden;
+}
+
+/* Alert severity colors */
+.severity-low {
+  @apply bg-yellow-100 border-yellow-400 text-yellow-800;
+}
+
+.severity-medium {
+  @apply bg-orange-100 border-orange-400 text-orange-800;
+}
+
+.severity-high {
+  @apply bg-red-100 border-red-400 text-red-800;
+}
+
+/* ===== ACCESSIBILITY STYLES ===== */
+
+/* Font Size Controls */
+.font-small {
+  font-size: 0.875rem; /* 14px */
+}
+
+.font-normal {
+  font-size: 1rem; /* 16px - default */
+}
+
+.font-large {
+  font-size: 1.125rem; /* 18px */
+}
+
+.font-xlarge {
+  font-size: 1.25rem; /* 20px */
+}
+
+/* Color Blind Friendly Mode */
+.colorblind-mode {
+  /* Severity indicators with patterns */
+}
+
+.colorblind-mode .bg-red-600,
+.colorblind-mode .bg-red-100 {
+  background-color: #ef4444 !important;
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 255, 255, 0.3) 3px,
+    rgba(255, 255, 255, 0.3) 6px
+  ) !important;
+}
+
+.colorblind-mode .bg-orange-100 {
+  background-color: #f97316 !important;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 4px,
+    rgba(255, 255, 255, 0.4) 4px,
+    rgba(255, 255, 255, 0.4) 8px
+  ) !important;
+}
+
+.colorblind-mode .bg-yellow-100 {
+  background-color: #eab308 !important;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.5) 2px,
+    rgba(255, 255, 255, 0.5) 4px
+  ) !important;
+}
+
+.colorblind-mode .bg-green-100 {
+  background-color: #22c55e !important;
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.4) 2px,
+    rgba(255, 255, 255, 0.4) 4px
+  ) !important;
+}
+
+.colorblind-mode .bg-blue-100,
+.colorblind-mode .bg-blue-600 {
+  background-color: #3b82f6 !important;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 255, 255, 0.3) 3px,
+    rgba(255, 255, 255, 0.3) 6px
+  ) !important;
+}
+
+/* High Contrast Mode */
+.high-contrast {
+  filter: contrast(150%) brightness(110%);
+}
+
+.high-contrast .bg-white {
+  background-color: #ffffff !important;
+  border-color: #000000 !important;
+}
+
+.high-contrast .text-gray-500,
+.high-contrast .text-gray-600,
+.high-contrast .text-gray-700 {
+  color: #000000 !important;
+}
+
+.high-contrast .text-gray-400 {
+  color: #333333 !important;
+}
+
+.high-contrast .border-gray-200,
+.high-contrast .border-gray-300 {
+  border-color: #000000 !important;
+}
+
+.high-contrast .bg-gray-50,
+.high-contrast .bg-gray-100 {
+  background-color: #f8f8f8 !important;
+  border-color: #000000 !important;
+}
+
+/* Focus indicators for accessibility */
+.high-contrast button:focus,
+.high-contrast input:focus,
+.high-contrast select:focus,
+.high-contrast textarea:focus {
+  outline: 3px solid #000000 !important;
+  outline-offset: 2px !important;
+}
+
+/* Enhanced button contrast */
+.high-contrast .bg-red-600 {
+  background-color: #dc2626 !important;
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast .bg-blue-600 {
+  background-color: #2563eb !important;
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast .bg-green-600 {
+  background-color: #16a34a !important;
+  border: 2px solid #000000 !important;
+}
+
+/* ===== DARK MODE STYLES ===== */
+
+/* Dark mode base styles */
+.dark {
+  color-scheme: dark;
+}
+
+/* Background colors */
+.dark body {
+  background-color: #1a1a1a !important;
+  color: #e5e5e5 !important;
+}
+
+.dark .bg-white {
+  background-color: #2d2d2d !important;
+  color: #e5e5e5 !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: #262626 !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: #333333 !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: #404040 !important;
+}
+
+/* Text colors */
+.dark .text-gray-900 {
+  color: #f5f5f5 !important;
+}
+
+.dark .text-gray-800 {
+  color: #e5e5e5 !important;
+}
+
+.dark .text-gray-700 {
+  color: #d4d4d4 !important;
+}
+
+.dark .text-gray-600 {
+  color: #a3a3a3 !important;
+}
+
+.dark .text-gray-500 {
+  color: #737373 !important;
+}
+
+.dark .text-gray-400 {
+  color: #525252 !important;
+}
+
+/* Border colors */
+.dark .border-gray-200 {
+  border-color: #404040 !important;
+}
+
+.dark .border-gray-300 {
+  border-color: #525252 !important;
+}
+
+/* Alert severity colors in dark mode */
+.dark .bg-red-100 {
+  background-color: #7f1d1d !important;
+  color: #fecaca !important;
+}
+
+.dark .text-red-800 {
+  color: #fecaca !important;
+}
+
+.dark .bg-orange-100 {
+  background-color: #9a3412 !important;
+  color: #fed7aa !important;
+}
+
+.dark .text-orange-800 {
+  color: #fed7aa !important;
+}
+
+.dark .bg-yellow-100 {
+  background-color: #a16207 !important;
+  color: #fef3c7 !important;
+}
+
+.dark .text-yellow-800 {
+  color: #fef3c7 !important;
+}
+
+.dark .bg-green-100 {
+  background-color: #14532d !important;
+  color: #dcfce7 !important;
+}
+
+.dark .text-green-800 {
+  color: #dcfce7 !important;
+}
+
+.dark .bg-green-700 {
+  color: #bbf7d0 !important;
+}
+
+.dark .bg-blue-100 {
+  background-color: #1e3a8a !important;
+  color: #dbeafe !important;
+}
+
+.dark .text-blue-800 {
+  color: #dbeafe !important;
+}
+
+.dark .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+.dark .bg-blue-700 {
+  background-color: #1d4ed8 !important;
+}
+
+/* Button hover states */
+.dark .hover\:bg-gray-50:hover {
+  background-color: #404040 !important;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #525252 !important;
+}
+
+.dark .hover\:bg-gray-200:hover {
+  background-color: #737373 !important;
+}
+
+.dark .hover\:bg-red-700:hover {
+  background-color: #b91c1c !important;
+}
+
+.dark .hover\:bg-blue-700:hover {
+  background-color: #1d4ed8 !important;
+}
+
+.dark .hover\:bg-green-700:hover {
+  background-color: #15803d !important;
+}
+
+.dark .hover\:bg-orange-100:hover {
+  background-color: #c2410c !important;
+}
+
+.dark .hover\:bg-purple-100:hover {
+  background-color: #7c3aed !important;
+}
+
+.dark .hover\:text-gray-600:hover {
+  color: #d4d4d4 !important;
+}
+
+.dark .hover\:text-blue-700:hover {
+  color: #60a5fa !important;
+}
+
+.dark .hover\:text-green-700:hover {
+  color: #4ade80 !important;
+}
+
+/* Form elements */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="number"],
+.dark textarea,
+.dark select {
+  background-color: #404040 !important;
+  border-color: #525252 !important;
+  color: #e5e5e5 !important;
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="number"]:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+/* Checkbox styling in dark mode */
+.dark input[type="checkbox"] {
+  background-color: #404040 !important;
+  border-color: #525252 !important;
+}
+
+.dark input[type="checkbox"]:checked {
+  background-color: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+}
+
+/* Special elements */
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Map elements in dark mode */
+.dark .leaflet-container {
+  filter: brightness(0.8) contrast(1.2);
+}
+
+/* Preserve readability for certain elements */
+.dark .bg-red-600,
+.dark .bg-blue-600,
+.dark .bg-green-600,
+.dark .bg-orange-600,
+.dark .bg-purple-600 {
+  color: white !important;
+}
+
+/* Dark mode compatibility with colorblind mode */
+.dark.colorblind-mode .bg-red-100,
+.dark.colorblind-mode .bg-orange-100,
+.dark.colorblind-mode .bg-yellow-100,
+.dark.colorblind-mode .bg-green-100,
+.dark.colorblind-mode .bg-blue-100 {
+  background-blend-mode: overlay;
+}
+
+/* Dark mode for modals and panels */
+.dark .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.8) !important;
+}
+
+.dark .modal-content {
+  background-color: #2d2d2d !important;
+  border-color: #404040 !important;
+}
+
+/* Dark mode for specific panel elements */
+.dark .rounded-b-lg {
+  background-color: #262626 !important;
+}
+
+.dark kbd {
+  background-color: #404040 !important;
+  color: #e5e5e5 !important;
+  border-color: #525252 !important;
+}
