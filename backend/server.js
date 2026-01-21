@@ -71,7 +71,13 @@ app.post('/api/reports', (req, res) => {
   }
 
   // 2. RESOURCE MATCHING (C++ Bridge)
-  const matcherPath = './matcher/matcher.exe';
+  const path = require('path');
+  const isWindows = process.platform === 'win32';
+
+  const matcherPath = isWindows
+    ? path.join(__dirname, 'matcher', 'matcher.exe')
+    : path.join(__dirname, 'matcher', 'matcher');
+
   
   if (!fs.existsSync(matcherPath)) {
       newReport.assignedUnit = "Unit_Alpha"; // Fallback
