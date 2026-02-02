@@ -33,6 +33,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({});
   const [criticalQueue, setCriticalQueue] = useState([]);
   const [routeDest, setRouteDest] = useState(null); 
+  const [userEmail, setUserEmail] = useState('');
   
   // Identity State
   const [role, setRole] = useState('public');
@@ -77,6 +78,40 @@ export default function Dashboard() {
       })
       .catch(err => console.error("API Error:", err));
 
+    // ✅ REGISTER USER WITH EMAIL + LOCATION
+    const registerUser = (email) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition((position) => {
+          socket.emit('register-user', {
+            email: email,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+          
+          // Update location every 10 seconds
+          const locationInterval = setInterval(() => {
+            navigator.geolocation.getCurrentPosition((pos) => {
+              socket.emit('update-location', {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude
+              });
+            });
+          }, 10000);
+          
+          return () => clearInterval(locationInterval);
+        });
+      }
+    };
+
+    // Prompt for email if user is public
+    if (role === 'public' && !userEmail) {
+      const email = prompt('Enter your email to receive emergency alerts:');
+      if (email) {
+        setUserEmail(email);
+        registerUser(email);
+      }
+    }
+
     // Listeners
     socket.on('new-incident', newReport => {
       const cleanReport = normalizeIncident(newReport);
@@ -103,12 +138,14 @@ export default function Dashboard() {
     });
 
     socket.on('stats-update', newStats => setStats(newStats));
+    socket.on('user-registered', () => console.log('✅ Registered for email alerts'));
 
     return () => { 
         socket.off('new-incident'); 
         socket.off('incident-update');
         socket.off('stats-update');
-        socket.off('incident-resolved'); 
+        socket.off('incident-resolved');
+        socket.off('user-registered'); 
     };
   }, [role]);
 
