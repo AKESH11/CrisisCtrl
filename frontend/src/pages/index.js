@@ -34,6 +34,8 @@ export default function Dashboard() {
   const [criticalQueue, setCriticalQueue] = useState([]);
   const [routeDest, setRouteDest] = useState(null); 
   const [userEmail, setUserEmail] = useState('');
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [tempEmail, setTempEmail] = useState('');
   
   // Identity State
   const [role, setRole] = useState('public');
@@ -62,6 +64,31 @@ export default function Dashboard() {
     lng: raw.lng || raw.location?.lng,
   });
 
+  // ✅ REGISTER USER WITH EMAIL + LOCATION
+  const registerUser = (email) => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition((position) => {
+        socket.emit('register-user', {
+          email: email,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        
+        // Update location every 10 seconds
+        const locationInterval = setInterval(() => {
+          navigator.geolocation.getCurrentPosition((pos) => {
+            socket.emit('update-location', {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude
+            });
+          });
+        }, 10000);
+        
+        return () => clearInterval(locationInterval);
+      });
+    }
+  };
+
   useEffect(() => {
     alertSound.current = new Audio('/alert.mp3');
     alertSound.current.volume = 0.8;
@@ -78,38 +105,9 @@ export default function Dashboard() {
       })
       .catch(err => console.error("API Error:", err));
 
-    // ✅ REGISTER USER WITH EMAIL + LOCATION
-    const registerUser = (email) => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
-          socket.emit('register-user', {
-            email: email,
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-          
-          // Update location every 10 seconds
-          const locationInterval = setInterval(() => {
-            navigator.geolocation.getCurrentPosition((pos) => {
-              socket.emit('update-location', {
-                lat: pos.coords.latitude,
-                lng: pos.coords.longitude
-              });
-            });
-          }, 10000);
-          
-          return () => clearInterval(locationInterval);
-        });
-      }
-    };
-
-    // Prompt for email if user is public
-    if (role === 'public' && !userEmail) {
-      const email = prompt('Enter your email to receive emergency alerts:');
-      if (email) {
-        setUserEmail(email);
-        registerUser(email);
-      }
+    // Show email modal ONLY for public users - check router query directly
+    if (router.isReady && router.query.role === 'public' && !userEmail) {
+      setShowEmailModal(true);
     }
 
     // Listeners
@@ -147,7 +145,7 @@ export default function Dashboard() {
         socket.off('incident-resolved');
         socket.off('user-registered'); 
     };
-  }, [role]);
+  }, [role, router.isReady, userEmail]);
 
   // ACTIONS
 
@@ -166,9 +164,10 @@ export default function Dashboard() {
     socket.emit('update-threat', { id: id, severity: newSeverity });
   };
 
+  // Filter incidents based on role
   const displayedIncidents = role === 'unit' 
-    ? incidents.filter(i => i.assignedUnit === unitId || i.assignedUnit === 'Unassigned')
-    : incidents;
+    ? incidents.filter(i => i.assignedUnit === unitId || !i.assignedUnit || i.assignedUnit === 'Unassigned')
+    : incidents; // Admin and public see all incidents
 
   return (
     <div className="flex h-screen bg-slate-950 text-white overflow-hidden font-sans relative">
@@ -222,6 +221,71 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Email Registration Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl animate-in fade-in zoom-in-95">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-600/20 rounded-full mb-4">
+                <Shield className="w-7 h-7 text-indigo-400" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Stay Informed</h2>
+              <p className="text-slate-400 text-sm">Register to receive real-time emergency alerts and safety updates in your area.</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-2 ml-1">EMAIL ADDRESS</label>
+                <input 
+                  type="email" 
+                  value={tempEmail}
+                  onChange={(e) => setTempEmail(e.target.value)}
+                  placeholder="your.email@example.com"
+                  className="w-full bg-slate-950 text-white px-4 py-3 rounded-xl border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && tempEmail.trim()) {
+                      setUserEmail(tempEmail);
+                      registerUser(tempEmail);
+                      setShowEmailModal(false);
+                    }
+                  }}
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setShowEmailModal(false);
+                    router.push('/login');
+                  }}
+                  className="flex-1 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition-all"
+                >
+                  Skip
+                </button>
+                <button 
+                  onClick={() => {
+                    if (tempEmail.trim()) {
+                      setUserEmail(tempEmail);
+                      registerUser(tempEmail);
+                      setShowEmailModal(false);
+                    }
+                  }}
+                  disabled={!tempEmail.trim()}
+                  className="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-semibold text-sm transition-all shadow-lg shadow-indigo-500/20"
+                >
+                  Register
+                </button>
+              </div>
+            </div>
+            
+            <p className="text-slate-600 text-xs text-center mt-6">
+              Your information is encrypted and secure. Unsubscribe anytime.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

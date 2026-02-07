@@ -140,6 +140,11 @@ def send_email(email_address, subject, incident_type, distance, location_name):
 
 def notify_nearby_users(incident):
     """Send email to all users within 1km of incident"""
+    # Check if location exists
+    if not incident.get('location') or not incident['location'].get('lat') or not incident['location'].get('lng'):
+        print(f"⚠️ Cannot notify users - incident location is missing")
+        return
+    
     incident_lat = incident['location']['lat']
     incident_lng = incident['location']['lng']
     
@@ -386,6 +391,36 @@ def get_active_users():
         for user in active_users.values()
     ]
     return jsonify({"active_users": users_list, "count": len(users_list)})
+
+# --- TELEPHONY ROUTES (REAL PHONE CALLS) ---
+try:
+    from telephony import (
+        handle_incoming_call,
+        process_answer,
+        get_call_status,
+        TWILIO_PHONE_NUMBER
+    )
+    
+    @app.route('/telephony/incoming', methods=['POST'])
+    def telephony_incoming():
+        """Twilio webhook for incoming calls"""
+        return handle_incoming_call()
+    
+    @app.route('/telephony/process_answer', methods=['POST'])
+    def telephony_process():
+        """Process user's spoken answer"""
+        return process_answer()
+    
+    @app.route('/api/telephony/number', methods=['GET'])
+    def get_phone_number():
+        """Get CrisisCtrl emergency phone number"""
+        return jsonify({"phone_number": TWILIO_PHONE_NUMBER})
+    
+    print("📞 Telephony routes registered")
+    
+except ImportError as e:
+    print(f"⚠️ Telephony module not available: {e}")
+    TWILIO_PHONE_NUMBER = None
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5001)

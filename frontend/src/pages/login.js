@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Shield, Users, Truck, Lock, ChevronRight } from 'lucide-react';
+import VoiceCallButton from '../components/VoiceCallButton';
+import PhoneCallButton from '../components/PhoneCallButton';
 
 export default function Login() {
   const router = useRouter();
@@ -8,6 +10,20 @@ export default function Login() {
   const [unitId, setUnitId] = useState('Unit_Alpha');
   const [authKey, setAuthKey] = useState('');
   const [error, setError] = useState('');
+
+  // Clear password when role changes
+  const handleRoleChange = (newRole) => {
+    setRole(newRole);
+    setAuthKey('');
+    setError('');
+  };
+
+  const handleVoiceCallComplete = () => {
+    console.log('✅ Voice call completed, auto-logging in as public...');
+    setTimeout(() => {
+      router.push('/?role=public');
+    }, 1000);
+  };
 
   const handleLogin = () => {
     // 🔒 AUTHENTICATION LOGIC
@@ -49,7 +65,7 @@ export default function Login() {
             {['public', 'unit', 'admin'].map((r) => (
               <button 
                 key={r}
-                onClick={() => { setRole(r); setError(''); }}
+                onClick={() => handleRoleChange(r)}
                 className={`py-3 rounded-lg text-xs font-bold uppercase transition-all flex flex-col items-center gap-1
                   ${role === r ? 'bg-slate-800 text-white shadow-lg ring-1 ring-slate-700' : 'text-slate-500 hover:text-slate-300'}
                 `}
@@ -86,11 +102,14 @@ export default function Login() {
                   <Lock size={10} /> ACCESS CODE
                 </label>
                 <input 
+                  key={role}
                   type="password" 
-                  placeholder={role === 'admin' ? "Admin PIN" : "Unit ID Code"}
+                  placeholder={role === 'admin' ? "Enter ADMIN123" : "Enter UNIT99"}
                   value={authKey}
                   onChange={(e) => setAuthKey(e.target.value)}
-                  className="w-full bg-slate-950 text-white p-4 rounded-xl border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none font-mono tracking-widest text-center"
+                  maxLength="100"
+                  autoComplete="new-password"
+                  className="w-full bg-slate-950 text-white p-4 rounded-xl border border-slate-800 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 outline-none font-mono tracking-widest text-center placeholder:text-slate-700 placeholder:tracking-normal"
                 />
               </div>
             )}
@@ -113,7 +132,20 @@ export default function Login() {
         <p className="text-center text-slate-600 text-xs mt-8">
           Restricted Access. Unauthorized entry is monitored.
         </p>
+
+        <p className="text-center text-cyan-500 text-xs mt-4 font-bold animate-pulse">
+          🎤 Accessibility: Say "crisis control help" to report emergency
+        </p>
       </div>
+
+      {/* Voice Call for Blind Users */}
+      <VoiceCallButton 
+        userEmail="CrisisCtrl1@gmail.com" 
+        onCallComplete={handleVoiceCallComplete}
+      />
+      
+      {/* Phone Call Option - Real Telephony */}
+      <PhoneCallButton />
     </div>
   );
 }
