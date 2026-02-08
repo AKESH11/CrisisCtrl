@@ -10,7 +10,7 @@ export default function SOSButton() {
   // Form State
   const [formData, setFormData] = useState({
     type: 'Medical Emergency',
-    severity: 'High',
+    severity: 'Medium',
     description: ''
   });
 
@@ -58,7 +58,7 @@ export default function SOSButton() {
   const handleClose = () => {
     setIsOpen(false);
     setStep('initial');
-    setFormData({ type: 'Medical Emergency', severity: 'High', description: '' });
+    setFormData({ type: 'Medical Emergency', severity: 'Medium', description: '' });
   };
 
   return (
@@ -95,10 +95,11 @@ export default function SOSButton() {
                     onChange={(e) => setFormData({...formData, type: e.target.value})}
                   >
                     <option>Medical Emergency</option>
-                    <option>Fire / Explosion</option>
-                    <option>Flood / Water Logging</option>
-                    <option>Road Accident</option>
-                    <option>Violence / Harassment</option>
+                    <option>Fire</option>
+                    <option>Rescue</option>
+                    <option>Flood</option>
+                    <option>Security</option>
+                    <option>Violence</option>
                     <option>Other</option>
                   </select>
                 </div>
@@ -106,7 +107,7 @@ export default function SOSButton() {
                 <div>
                   <label className="block text-xs font-bold text-slate-400 mb-1">SEVERITY LEVEL</label>
                   <div className="grid grid-cols-3 gap-2">
-                    {['Low', 'High', 'Critical'].map((level) => (
+                    {['Low', 'Medium', 'Critical'].map((level) => (
                       <button 
                         key={level}
                         onClick={() => setFormData({...formData, severity: level})}

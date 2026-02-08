@@ -80,7 +80,22 @@ app.post('/api/reports', (req, res) => {
 
   
   if (!fs.existsSync(matcherPath)) {
-      newReport.assignedUnit = "Unit_Alpha"; // Fallback
+      // Fallback: Smart unit assignment based on incident type
+      const typeMap = {
+        'fire': 'Unit_Alpha',
+        'rescue': 'Unit_Alpha',
+        'explosion': 'Unit_Alpha',
+        'medical': 'Unit_Bravo',
+        'flood': 'Unit_Bravo',
+        'security': 'Unit_Charlie',
+        'violence': 'Unit_Charlie',
+        'other': 'Unit_Charlie'
+      };
+      
+      const typeLower = (type || 'other').toLowerCase();
+      const matchedUnit = Object.keys(typeMap).find(key => typeLower.includes(key));
+      newReport.assignedUnit = matchedUnit ? typeMap[matchedUnit] : 'Unit_Charlie';
+      
       newReport.status = "Active";
       reportsDB.push(newReport);
       io.emit('new-incident', newReport);

@@ -96,6 +96,7 @@ export default function Sidebar({ incidents, unitType, onResolve, onRoute, onThr
                               className="w-full bg-slate-950 text-xs text-slate-300 p-2 rounded-lg border border-slate-700 outline-none focus:border-cyan-500 transition-colors cursor-pointer"
                           >
                               <option value="Low">LOW SEVERITY</option>
+                              <option value="Medium">MEDIUM ALERT</option>
                               <option value="High">HIGH ALERT</option>
                               <option value="Critical">CRITICAL THREAT</option>
                           </select>

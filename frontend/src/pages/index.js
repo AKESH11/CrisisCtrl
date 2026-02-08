@@ -50,19 +50,32 @@ export default function Dashboard() {
         router.push('/login');
       } else {
         const { role: paramRole, unitId: paramUnit } = router.query;
+        console.log('🔐 Login params - Role:', paramRole, 'UnitId:', paramUnit);
         if (paramRole) setRole(paramRole);
-        if (paramUnit) setUnitId(paramUnit);
+        if (paramUnit) {
+          setUnitId(paramUnit);
+          console.log('✅ UnitId set to:', paramUnit);
+        }
       }
     }
   }, [router.isReady, router.query]);
 
-  // Normalizer
-  const normalizeIncident = (raw) => ({
-    ...raw,
-    id: raw.id || raw._id, 
-    lat: raw.lat || raw.location?.lat,
-    lng: raw.lng || raw.location?.lng,
-  });
+  // Normalizer - Preserve ALL fields, just standardize location
+  const normalizeIncident = (raw) => {
+    const normalized = {
+      ...raw, // Keep everything from raw
+      id: raw.id || raw._id, 
+      lat: raw.lat || raw.location?.lat,
+      lng: raw.lng || raw.location?.lng,
+    };
+    console.log('🔧 Normalize:', {
+      input_severity: raw.severity,
+      input_assignedUnit: raw.assignedUnit,
+      output_severity: normalized.severity,
+      output_assignedUnit: normalized.assignedUnit
+    });
+    return normalized;
+  };
 
   // ✅ REGISTER USER WITH EMAIL + LOCATION
   const registerUser = (email) => {
@@ -112,9 +125,22 @@ export default function Dashboard() {
 
     // Listeners
     socket.on('new-incident', newReport => {
+      console.log('📥 NEW INCIDENT RECEIVED:', newReport);
+      console.log('   Type:', newReport.type);
+      console.log('   Severity:', newReport.severity);
+      console.log('   AssignedUnit:', newReport.assignedUnit);
+      console.log('   ID:', newReport.id);
+      console.log('   Location:', newReport.location);
       const cleanReport = normalizeIncident(newReport);
+      console.log('📦 After normalize:', cleanReport);
       const analyzedReport = analyzeIncident(cleanReport);
-      setIncidents(prev => [analyzedReport, ...prev]);
+      console.log('🤖 After AI analyze:', analyzedReport);
+      console.log('   Final Severity:', analyzedReport.severity);
+      console.log('   Final AssignedUnit:', analyzedReport.assignedUnit);
+      setIncidents(prev => {
+        console.log('💾 Adding to incidents array. Current count:', prev.length);
+        return [analyzedReport, ...prev];
+      });
       
       if (analyzedReport.is_critical && role !== 'public') {
          setCriticalQueue(prev => [analyzedReport, ...prev]);
@@ -164,10 +190,21 @@ export default function Dashboard() {
     socket.emit('update-threat', { id: id, severity: newSeverity });
   };
 
-  // Filter incidents based on role
-  const displayedIncidents = role === 'unit' 
-    ? incidents.filter(i => i.assignedUnit === unitId || !i.assignedUnit || i.assignedUnit === 'Unassigned')
-    : incidents; // Admin and public see all incidents
+  // TEMPORARILY SHOW ALL INCIDENTS FOR DEBUGGING
+  const displayedIncidents = incidents; // Show all for now
+  
+  // Log filtering info
+  console.log(`📊 INCIDENTS - Role: "${role}", UnitId: "${unitId}", Total: ${incidents.length}`);
+  incidents.forEach((inc, idx) => {
+    if (idx < 5) { // Only log first 5
+      console.log(`  [${idx}] ID: ${inc.id}, Type: ${inc.type}, Severity: ${inc.severity}, AssignedUnit: "${inc.assignedUnit}"`);
+    }
+  });
+  
+  // Original filter (disabled for debugging)
+  // const displayedIncidents = role === 'unit' 
+  //   ? incidents.filter(i => i.assignedUnit === unitId)
+  //   : incidents;
 
   return (
     <div className="flex h-screen bg-slate-950 text-white overflow-hidden font-sans relative">

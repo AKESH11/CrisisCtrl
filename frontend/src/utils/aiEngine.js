@@ -66,8 +66,17 @@ export function analyzeIncident(incident) {
   else if (score >= 50) recommendation = "DISPATCH FIRE/EMS & ESTABLISH PERIMETER";
   else recommendation = "STANDARD PATROL RESPONSE";
 
+  console.log('🤖 AI Analysis:', {
+    type: incident.type,
+    originalSeverity: incident.severity,
+    ai_score: score,
+    is_critical: score >= 80
+  });
+
   return {
     ...incident,
+    // ✅ PRESERVE ORIGINAL SEVERITY - DO NOT OVERRIDE
+    severity: incident.severity, // Keep the user's reported severity
     ai_score: score,
     ai_recommendation: recommendation,
     // THRESHOLD RAISED: Only score >= 80 is Critical (Red)

@@ -37,9 +37,9 @@ else:
 
 # --- UNIT CONFIGURATION ---
 UNITS = {
-    "Unit_Alpha": {"type": "Fire & Rescue", "base": {"lat": 13.0827, "lng": 80.2707}, "specialty": ["Fire", "Explosion", "Heatwave"]},
-    "Unit_Bravo": {"type": "Medical & Flood", "base": {"lat": 11.0168, "lng": 76.9558}, "specialty": ["Flood", "Flash Flood Alert", "Medical Emergency", "Cyclone Warning"]},
-    "Unit_Charlie": {"type": "Security Ops", "base": {"lat": 9.9252, "lng": 78.1198}, "specialty": ["Terrorism", "Public Order", "Violence", "SOS REPORT", "Security Threat"]}
+    "Unit_Alpha": {"type": "Fire & Rescue", "base": {"lat": 13.0827, "lng": 80.2707}, "specialty": ["fire", "rescue", "explosion", "heatwave"]},
+    "Unit_Bravo": {"type": "Medical & Flood", "base": {"lat": 11.0168, "lng": 76.9558}, "specialty": ["medical", "flood", "flash flood alert", "medical emergency", "cyclone warning"]},
+    "Unit_Charlie": {"type": "Security Ops", "base": {"lat": 9.9252, "lng": 78.1198}, "specialty": ["security", "terrorism", "public order", "violence", "sos report", "security threat", "other"]}
 }
 
 TN_CITIES = [
@@ -57,9 +57,15 @@ active_users = {}  # {socketId: {email, lat, lng, timestamp}}
 
 # --- HELPERS ---
 def assign_unit(incident_type):
+    print(f"   🔍 Assigning unit for: '{incident_type}'")
+    incident_lower = incident_type.lower()
+    print(f"   🔍 Lowercase: '{incident_lower}'")
     for unit_id, data in UNITS.items():
-        if any(keyword in incident_type for keyword in data['specialty']):
+        print(f"      Checking {unit_id}: {data['specialty']}")
+        if any(keyword in incident_lower for keyword in data['specialty']):
+            print(f"      ✅ MATCH! Assigning to {unit_id}")
             return unit_id
+    print(f"      ❌ No match, defaulting to Unit_Charlie")
     return "Unit_Charlie"
 
 def get_distance_meters(lat1, lon1, lat2, lon2):
@@ -248,8 +254,12 @@ def get_reports():
 def handle_sos():
     data = request.json
     print(f"\n🆘 SOS RECEIVED: {data}")
+    print(f"   Type: {data.get('type')}")
+    print(f"   Severity: {data.get('severity')}")
+    print(f"   Description: {data.get('description')}")
     
     assigned = assign_unit(data.get("type", "SOS"))
+    print(f"   ✅ ASSIGNED TO: {assigned}")
     
     sos_incident = {
         "id": f"sos-{int(time.time())}",
@@ -262,6 +272,8 @@ def handle_sos():
         "is_critical": True,
         "ai_recommendation": f"DISPATCH {assigned.upper()} IMMEDIATELY"
     }
+    
+    print(f"   📦 Created incident: {sos_incident}")
     
     active_incidents.insert(0, sos_incident)
     stats['active'] += 1; stats['total'] += 1; stats['critical'] += 1

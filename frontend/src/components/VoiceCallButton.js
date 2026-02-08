@@ -32,6 +32,7 @@ export default function VoiceCallButton({ userEmail = 'CrisisCtrl1@gmail.com', o
   // Request microphone permission on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!navigator.mediaDevices) return; // Skip if not available
     
     navigator.mediaDevices.getUserMedia({ audio: true })
       .then(() => {
@@ -146,54 +147,72 @@ export default function VoiceCallButton({ userEmail = 'CrisisCtrl1@gmail.com', o
     GlobalCallState.questionIndex = qIndex;
     GlobalCallState.notify();
     
-    // Cancel any existing speech
+    // Force cancel all existing speech
     window.speechSynthesis.cancel();
     
-    let speechStarted = false;
-    let fallbackTimeout = setTimeout(() => {
-      if (!speechStarted) {
-        console.log('⚠️ Speech timeout - proceeding to listen');
-        listen(qIndex);
-      }
-    }, 3000);
-    
-    // Small delay to ensure clean start
+    // Wait longer to ensure cancellation completes
     setTimeout(() => {
+      window.speechSynthesis.cancel(); // Double check
+      
+      let speechStarted = false;
+      let speechCompleted = false;
+      let fallbackTimeout = setTimeout(() => {
+        if (!speechStarted && !speechCompleted) {
+          console.log('⚠️ Speech timeout after 5s - proceeding to listen');
+          listen(qIndex);
+        }
+      }, 5000); // Increased to 5 seconds
+      
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.85;
+      utterance.rate = 0.9;
       utterance.volume = 1.0;
-      utterance.pitch = 1.1;
+      utterance.pitch = 1.0;
       utterance.lang = 'en-US';
       
-      // Wait for voices to load
       const speakNow = () => {
         const voices = window.speechSynthesis.getVoices();
         if (voices.length > 0) {
-          const femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Google'));
-          if (femaleVoice) utterance.voice = femaleVoice;
+          const femaleVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Google') || v.name.includes('Microsoft'));
+          if (femaleVoice) {
+            utterance.voice = femaleVoice;
+            console.log('🎤 Using voice:', femaleVoice.name);
+          }
         }
         
         utterance.onstart = () => { 
-          console.log('✅ Speech started'); 
+          console.log('✅ Speech started for Q', qIndex + 1); 
           speechStarted = true;
           clearTimeout(fallbackTimeout);
         };
+        
         utterance.onend = () => { 
-          console.log('✅ Speech done');
+          console.log('✅ Speech completed for Q', qIndex + 1);
+          speechCompleted = true;
           clearTimeout(fallbackTimeout);
-          setTimeout(() => listen(qIndex), 800); 
-        };
-        utterance.onerror = (e) => { 
-          console.log('Speech error:', e.error, '- proceeding to listen');
-          clearTimeout(fallbackTimeout);
-          setTimeout(() => listen(qIndex), 500); 
+          setTimeout(() => {
+            console.log('🎧 Now starting to listen for Q', qIndex + 1);
+            listen(qIndex);
+          }, 800); 
         };
         
-        console.log('🔊 Attempting to speak...');
+        utterance.onerror = (e) => { 
+          console.error('❌ Speech error for Q', qIndex + 1, ':', e.error);
+          clearTimeout(fallbackTimeout);
+          if (!speechCompleted) {
+            console.log('⚠️ Proceeding to listen despite error');
+            setTimeout(() => listen(qIndex), 500); 
+          }
+        };
+        
+        console.log('🔊 Attempting to speak Q', qIndex + 1, '...');
         try {
           window.speechSynthesis.speak(utterance);
+          // Log queue status
+          setTimeout(() => {
+            console.log('📊 Speech queue - speaking:', window.speechSynthesis.speaking, 'pending:', window.speechSynthesis.pending);
+          }, 100);
         } catch(e) {
-          console.log('Speech exception:', e);
+          console.error('💥 Speech exception:', e);
           clearTimeout(fallbackTimeout);
           listen(qIndex);
         }
@@ -203,9 +222,10 @@ export default function VoiceCallButton({ userEmail = 'CrisisCtrl1@gmail.com', o
       if (window.speechSynthesis.getVoices().length > 0) {
         speakNow();
       } else {
+        console.log('⏳ Waiting for voices to load...');
         window.speechSynthesis.onvoiceschanged = speakNow;
       }
-    }, 200);
+    }, 300); // Wait for cancel to complete
   };
 
   const listen = (currentQIndex) => {
@@ -299,17 +319,50 @@ export default function VoiceCallButton({ userEmail = 'CrisisCtrl1@gmail.com', o
 
   const submitReport = (finalAnswers) => {
     console.log('📤 SUBMITTING REPORT:', finalAnswers);
+    console.log('Answer 0 (type):', finalAnswers[0]);
+    console.log('Answer 1 (severity):', finalAnswers[1]);
+    console.log('Answer 2 (description):', finalAnswers[2]);
+    
     GlobalCallState.currentQuestion = 'Submitting your report...';
     GlobalCallState.isListening = false;
     GlobalCallState.notify();
-    const severityMap = { 'low': 'Low', 'medium': 'Medium', 'high': 'Critical' };
+    
+    // Robust severity detection - EXACT MAPPING
+    const detectSeverity = (text) => {
+      if (!text) {
+        console.log('⚠️ No severity text, defaulting to Medium');
+        return 'Medium';
+      }
+      const lower = text.toLowerCase().trim();
+      console.log('🔍 Detecting severity from:', `"${lower}"`);
+      
+      // Remove common filler words that might interfere
+      const cleaned = lower.replace(/\b(it's|its|is|very|really|quite|pretty|somewhat)\b/g, '').trim();
+      console.log('🧹 After cleaning:', `"${cleaned}"`);
+      
+      // EXACT MAPPING: low=Low, medium=Medium, high/hi=Critical
+      if (cleaned.includes('low') || cleaned.includes('minor') || cleaned.includes('small')) {
+        console.log('✅ Detected: Low');
+        return 'Low';
+      }
+      if (cleaned.includes('medium') || cleaned.includes('moderate') || cleaned.includes('med') || cleaned.includes('mid')) {
+        console.log('✅ Detected: Medium');
+        return 'Medium';
+      }
+      if (cleaned.includes('high') || cleaned.includes('hi') || cleaned.includes('critical') || cleaned.includes('severe')) {
+        console.log('✅ Detected: Critical');
+        return 'Critical';
+      }
+      console.log('⚠️ No match, defaulting to Medium');
+      return 'Medium'; // Default
+    };
     
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const reportData = {
             type: finalAnswers[0] || 'Unknown',
-            severity: severityMap[finalAnswers[1]?.toLowerCase()] || 'Medium',
+            severity: detectSeverity(finalAnswers[1]),
             description: finalAnswers[2] || 'No additional info',
             email: userEmail,
             location: {
@@ -323,7 +376,7 @@ export default function VoiceCallButton({ userEmail = 'CrisisCtrl1@gmail.com', o
           console.warn('Geolocation failed:', error);
           const reportData = {
             type: finalAnswers[0] || 'Unknown',
-            severity: severityMap[finalAnswers[1]?.toLowerCase()] || 'Medium',
+            severity: detectSeverity(finalAnswers[1]),
             description: finalAnswers[2] || 'No additional info',
             email: userEmail,
             location: { lat: 13.0827, lng: 80.2707 }
@@ -334,7 +387,7 @@ export default function VoiceCallButton({ userEmail = 'CrisisCtrl1@gmail.com', o
     } else {
       const reportData = {
         type: finalAnswers[0] || 'Unknown',
-        severity: severityMap[finalAnswers[1]?.toLowerCase()] || 'Medium',
+        severity: detectSeverity(finalAnswers[1]),
         description: finalAnswers[2] || 'No additional info',
         email: userEmail,
         location: { lat: 13.0827, lng: 80.2707 }
@@ -344,16 +397,17 @@ export default function VoiceCallButton({ userEmail = 'CrisisCtrl1@gmail.com', o
   };
 
   const sendReport = (data) => {
+    console.log('📡 SENDING TO BACKEND:', JSON.stringify(data, null, 2));
     axios.post('http://localhost:5001/api/sos', data)
       .then(() => {
-        console.log(' Report submitted successfully');
-        GlobalCallState.currentQuestion = ' Report submitted! Thank you.';
+        console.log('✅ Report submitted successfully');
+        GlobalCallState.currentQuestion = '✅ Report submitted! Thank you.';
         GlobalCallState.notify();
         setTimeout(() => { endCall(); if (onCallComplete) onCallComplete(); }, 2000);
       })
       .catch((error) => {
-        console.error(' Failed to submit:', error);
-        GlobalCallState.currentQuestion = ' Failed. Please try again.';
+        console.error('❌ Failed to submit:', error);
+        GlobalCallState.currentQuestion = '❌ Failed. Please try again.';
         GlobalCallState.notify();
         setTimeout(endCall, 3000);
       });
